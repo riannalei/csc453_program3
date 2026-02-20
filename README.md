@@ -1,9 +1,24 @@
-# Memory Simulator (Program 3)
+# CSC453 - Program 3: Memory Simulator
 
-simulate the journey of a logical address through a TLB, a Page Table, and finally into Physical Memory
+Names: Rianna Lei & Nathan Luong
 
-Plan: 
+COMPLETED:
+- Address bit-masking and decoding
+- TLB and Page Table logic
+- Physical memory and Backing Store management
+- FIFO page replacement algorithm and variable frame support
+- Output formatting and summary statistics
 
-Rianna: project setup, address bit-masking, BACKING_STORE I/O, Page Table/TLB logic, and FIFO PRA.
+TO BE COMPLETED:
+- Implement LRU page replacement algorithm
+- Implement OPT page replacement algorithm
 
-Nathan: (???tbd) LRU (requires tracking access time) and OPT (requires looking ahead at the reference sequence)
+RUN THE PROGRAM:
+Make the script executable: chmod +x memSim.py
+Run: ./memSim <addresses.txt> <FRAMES> <PRA>
+
+NOTES:
+- We implemented the TLB as a FIFO cache with 16 entries as specified
+- The Page Table includes a "present" bit to track residency.
+- Hits in the FIFO algorithm do not change the position in the queue.
+- TLB is flushed when a page is evicted from physical memory to maintain consistency.
