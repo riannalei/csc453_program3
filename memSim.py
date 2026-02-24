@@ -103,6 +103,9 @@ def main():
     fifo_pointer = 0 # Points to the next frame to be replaced
     frame_load_order = [0] * num_frames
     load_counter = 0
+    frames_filled = 0
+    lru_timer = 0
+    frame_last_used = [0] * num_frames
 
     # Load Addresses
     try:
@@ -139,6 +142,21 @@ def main():
                 elif algorithm == "OPT":
                     frame_num = opt_select_victim(frame_to_page, current_index, page_sequence, frame_load_order)
                 
+                # Check if we have empty frames before starting eviction logic
+                if frames_filled < num_frames:
+                    frame_num = frames_filled
+                    frames_filled += 1
+                else:
+                    # Use Replacement Algorithm to choose frame
+                    if algorithm == "FIFO":
+                        frame_num = fifo_pointer
+                        fifo_pointer = (fifo_pointer + 1) % num_frames
+                    elif algorithm == "LRU":
+                        frame_num = frame_last_used.index(min(frame_last_used))
+                    elif algorithm == "OPT":
+                        frame_num = opt_select_victim(frame_to_page, current_index, page_sequence, frame_load_order)
+
+                
                 # EVICTION: Clean up the old page mapping
                 old_page = frame_to_page[frame_num]
                 if old_page is not None:
@@ -154,6 +172,10 @@ def main():
             
             # Update TLB after Page Table hit or fault
             tlb.update(page_num, frame_num)
+
+        # IMPORTANT: LRU must update the timestamp on EVERY access (Hit or Miss)
+        frame_last_used[frame_num] = lru_timer
+        lru_timer += 1
 
         # retrieve referenced byte as a SIGNED integer (-128 to 127)
         raw_val = phys_mem[frame_num][offset]
