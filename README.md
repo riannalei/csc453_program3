@@ -4,7 +4,7 @@ Names: Rianna Lei & Nathan Luong
 
 ## COMPLETED:
 - [x] Address bit-masking and decoding
-- [x]TLB and Page Table logic
+- [x] TLB and Page Table logic
 - [x] Physical memory and Backing Store management
 - [x] FIFO page replacement algorithm and variable frame support
 - [x] Output formatting and summary statistics
