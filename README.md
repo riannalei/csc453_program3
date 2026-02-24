@@ -21,5 +21,4 @@ Names: Rianna Lei & Nathan Luong
 Make the script executable and run it using the following format:
 
 ```bash
-chmod +x memSim.py
-./memSim.py <reference-file.txt> <FRAMES> <PRA>
+./memSim <reference-file.txt> <FRAMES> <PRA>
