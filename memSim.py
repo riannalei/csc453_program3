@@ -61,6 +61,26 @@ class PageTable:
         self.table[page_num] = frame_num
         self.present[page_num] = True
 
+def opt_select_victim(frame_to_page, current_index, page_sequence, frame_load_order):
+    furthest = -1
+    victim_frame = 0
+
+    for frame, page in enumerate(frame_to_page):
+        if page is None:
+            return frame
+        
+        next_use = float('inf')
+        for j in range(current_index + 1, len(page_sequence)):
+            if page_sequence[j] == page:
+                next_use = j
+                break
+
+        if next_use > furthest or (next_use == furthest and frame_load_order[frame] < frame_load_order[victim_frame]):
+            furthest = next_use
+            victim_frame = frame
+    
+    return victim_frame
+
 # SIMULATOR ENGINE
 def main():
     # Handle Command Line Args
@@ -81,6 +101,8 @@ def main():
     # Trackers for Replacement Logic
     frame_to_page = [None] * num_frames
     fifo_pointer = 0 # Points to the next frame to be replaced
+    frame_load_order = [0] * num_frames
+    load_counter = 0
 
     # Load Addresses
     try:
@@ -89,9 +111,11 @@ def main():
     except FileNotFoundError:
         print(f"Error: {ref_file} not found.")
         return
+    
+    page_sequence = [(addr >> 8) & 0xFF for addr in addresses]
 
     # Start Simulation Loop
-    for addr in addresses:
+    for current_index, addr in enumerate(addresses):
         # Address Decoding: 16-bit address (8-bit page, 8-bit offset)
         page_num = (addr >> 8) & 0xFF
         offset = addr & 0xFF
@@ -108,9 +132,12 @@ def main():
                 with open("BACKING_STORE.bin", "rb") as bin_file:
                     bin_file.seek(page_num * 256)
                     page_data = bin_file.read(256)
-                
-                # Use FIFO Replacement to choose frame
-                frame_num = fifo_pointer
+            
+                if algorithm == "FIFO":
+                    frame_num = fifo_pointer
+                    fifo_pointer = (fifo_pointer + 1) % num_frames
+                elif algorithm == "OPT":
+                    frame_num = opt_select_victim(frame_to_page, current_index, page_sequence, frame_load_order)
                 
                 # EVICTION: Clean up the old page mapping
                 old_page = frame_to_page[frame_num]
@@ -121,10 +148,9 @@ def main():
                 # load new data into Physical Memory
                 phys_mem[frame_num] = bytearray(page_data)
                 frame_to_page[frame_num] = page_num
+                load_counter += 1
+                frame_load_order[frame_num] = load_counter
                 page_table.update(page_num, frame_num)
-                
-                # advance pointer for next fault (FIFO)
-                fifo_pointer = (fifo_pointer + 1) % num_frames
             
             # Update TLB after Page Table hit or fault
             tlb.update(page_num, frame_num)
