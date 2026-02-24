@@ -81,6 +81,11 @@ def main():
     # Trackers for Replacement Logic
     frame_to_page = [None] * num_frames
     fifo_pointer = 0 # Points to the next frame to be replaced
+    
+    # Trackers for LRU and Filling Memory
+    frames_filled = 0
+    lru_timer = 0
+    frame_last_used = [0] * num_frames
 
     # Load Addresses
     try:
@@ -109,8 +114,19 @@ def main():
                     bin_file.seek(page_num * 256)
                     page_data = bin_file.read(256)
                 
-                # Use FIFO Replacement to choose frame
-                frame_num = fifo_pointer
+                # Check if we have empty frames before starting eviction logic
+                if frames_filled < num_frames:
+                    frame_num = frames_filled
+                    frames_filled += 1
+                else:
+                    # Use Replacement Algorithm to choose frame
+                    if algorithm == "FIFO":
+                        frame_num = fifo_pointer
+                        fifo_pointer = (fifo_pointer + 1) % num_frames
+                    elif algorithm == "LRU":
+                        frame_num = frame_last_used.index(min(frame_last_used))
+                    elif algorithm == "OPT":
+                        pass
                 
                 # EVICTION: Clean up the old page mapping
                 old_page = frame_to_page[frame_num]
@@ -122,12 +138,13 @@ def main():
                 phys_mem[frame_num] = bytearray(page_data)
                 frame_to_page[frame_num] = page_num
                 page_table.update(page_num, frame_num)
-                
-                # advance pointer for next fault (FIFO)
-                fifo_pointer = (fifo_pointer + 1) % num_frames
             
             # Update TLB after Page Table hit or fault
             tlb.update(page_num, frame_num)
+
+        # IMPORTANT: LRU must update the timestamp on EVERY access (Hit or Miss)
+        frame_last_used[frame_num] = lru_timer
+        lru_timer += 1
 
         # retrieve referenced byte as a SIGNED integer (-128 to 127)
         raw_val = phys_mem[frame_num][offset]
